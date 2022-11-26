@@ -9,12 +9,22 @@ import (
 	"runtime"
 )
 
+// Get user home directory
+func getHomeDir() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	return home
+}
+
 // File name : pathlist.json
-const jsonFileName = "pathlist.json"
+var jsonFileName = getHomeDir() + "/pathlist.json"
 
 func main() {
 
-	// If json file not exist, create it
+	// if json file not exist then create it
 	if _, err := os.Stat(jsonFileName); os.IsNotExist(err) {
 		WriteToJsonFile(map[string]string{})
 	}
