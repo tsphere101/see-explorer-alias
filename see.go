@@ -14,6 +14,11 @@ const jsonFileName = "pathlist.json"
 
 func main() {
 
+	// If json file not exist, create it
+	if _, err := os.Stat(jsonFileName); os.IsNotExist(err) {
+		WriteToJsonFile(map[string]string{})
+	}
+
 	// if no args then print help and exit
 	if len(os.Args) == 1 {
 		fmt.Println("type see -h for help")
