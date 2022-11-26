@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 )
 
@@ -20,7 +21,7 @@ func getHomeDir() string {
 }
 
 // File name : pathlist.json
-var jsonFileName = getHomeDir() + "/pathlist.json"
+var jsonFileName = filepath.Join(getHomeDir(), "pathlist.json")
 
 func main() {
 
@@ -50,10 +51,17 @@ Options:
 -a, --add      add the path to the pathlist
 -l, --list     list all the paths in the pathlist
 -r, --remove   remove the path from the pathlist
+--where 	  location of the pathlist file
 
 `
 		fmt.Println(message)
 
+		return
+	}
+
+	// If the first argument is "--where" then print the path of the json file
+	if args[0] == "--where" {
+		fmt.Println(jsonFileName)
 		return
 	}
 
