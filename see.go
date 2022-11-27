@@ -8,6 +8,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"see/vscode"
+	"see/wt"
 )
 
 // Get user home directory
@@ -27,7 +29,10 @@ func main() {
 
 	// if json file not exist then create it
 	if _, err := os.Stat(jsonFileName); os.IsNotExist(err) {
-		WriteToJsonFile(map[string]string{})
+		jsonFile := make(map[string]map[string]string)
+		jsonFile["program"] = make(map[string]string)
+		jsonFile["pathlist"] = make(map[string]string)
+		WriteToJsonFile(jsonFile)
 	}
 
 	// if no args then print help and exit
@@ -51,6 +56,8 @@ Options:
 -a, --add      add the path to the pathlist
 -l, --list     list all the paths in the pathlist
 -r, --remove   remove the path from the pathlist
+-wt            open the path in windows terminal
+-code  	  	   open the path in vscode
 --where 	  location of the pathlist file
 
 `
@@ -90,7 +97,7 @@ Options:
 		path := args[2]
 
 		// Store to json file
-		AddThePathToJsonFile(name, path)
+		AppendPathAliasToJsonFile(name, path)
 
 		// Print success message
 		fmt.Println("Path added successfully.")
@@ -112,7 +119,44 @@ Options:
 		return
 	}
 
-	// If there is an argument, open the path
+	// If the first argument is "-wt", open the path in windows terminal
+	if args[0] == "-wt" {
+
+		// if there is no path then, run wt in user's home directory
+		if len(args) == 1 {
+			wt.RunWt(getHomeDir(), GetProgramPath("wt"))
+			return
+		}
+
+		// Get the path from lookup function
+		path := lookup(args[1])
+
+		// If path not found then print error message and exit
+		if path == "" {
+			fmt.Println("Path not found")
+			return
+		}
+
+		// Open the path in windows terminal
+		wt.RunWt(path, GetProgramPath("wt"))
+
+		return
+
+	}
+
+	// If the first argument is "-code", open the path in vscode
+	if args[0] == "-code" {
+
+		// Get the path from lookup function
+		path := lookup(args[1])
+
+		// Run vscode with the path
+		vscode.RunCode(path, GetProgramPath("code"))
+
+		return
+	}
+
+	// Open the path in explorer
 	if len(args) == 1 {
 
 		// Get the path from lookup
@@ -131,7 +175,7 @@ Options:
 }
 
 // Open json file and get data from it and return
-func OpenJsonFile() map[string]string {
+func OpenJsonFile() map[string]map[string]string {
 	filename := jsonFileName
 
 	jsonFile, err := os.Open(filename)
@@ -140,15 +184,14 @@ func OpenJsonFile() map[string]string {
 	}
 	defer jsonFile.Close()
 
-	byteValue, _ := ioutil.ReadAll(jsonFile)
-	var result map[string]string
-	json.Unmarshal([]byte(byteValue), &result)
+	var result map[string]map[string]string
+	json.NewDecoder(jsonFile).Decode(&result)
 
 	return result
 }
 
 // Write to json file
-func WriteToJsonFile(data map[string]string) {
+func WriteToJsonFile(data map[string]map[string]string) {
 	filename := jsonFileName
 
 	jsonData, err := json.Marshal(data)
@@ -161,6 +204,25 @@ func WriteToJsonFile(data map[string]string) {
 		fmt.Println(err)
 	}
 
+}
+
+func GetProgramPath(name string) string {
+	pathList := GetProgramPathList()
+	return pathList[name]
+}
+
+func GetProgramPathList() map[string]string {
+	return OpenJsonFile()["program"]
+}
+
+func WritePathAliasToJsonFile(data map[string]string) {
+	jsonFile := OpenJsonFile()
+
+	// Write the data to json file
+	jsonFile["pathlist"] = data
+
+	// Call WriteToJsonFile function to write the data to json file
+	WriteToJsonFile(jsonFile)
 }
 
 // Remove the path from json file
@@ -178,25 +240,30 @@ func RemovePath(name string) {
 
 // Get the pathlist from json file
 func GetPathList() map[string]string {
-	return OpenJsonFile()
+	return OpenJsonFile()["pathlist"]
 }
 
 // Add the path to jsonfile
-func AddThePathToJsonFile(name, path string) {
+func AppendPathAliasToJsonFile(name, path string) {
 	// Get the pathlist from json file
-	PathList := OpenJsonFile()
+	PathList := GetPathList()
+
+	// if the path list is empty, create a new one
+	if PathList == nil {
+		PathList = make(map[string]string)
+	}
 
 	// Add the path to PathList
 	PathList[name] = path
 
 	// Write to json file
-	WriteToJsonFile(PathList)
+	WritePathAliasToJsonFile(PathList)
 }
 
 // Path lookup
 func lookup(path string) string {
 	// Get the pathlist from json file
-	PathList := OpenJsonFile()
+	PathList := GetPathList()
 
 	// Check if path in PathList
 	if PathList[path] != "" {
