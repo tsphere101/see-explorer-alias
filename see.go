@@ -21,180 +21,65 @@ func getHomeDir() string {
 	return home
 }
 
+// If json file not exist then create it
+func checkJsonFile() {
+	// Get the home directory
+	home := getHomeDir()
+
+	// Get the json file name
+	jsonFileName := filepath.Join(home, ".path.json")
+
+	// Check if json file exist
+	if _, err := os.Stat(jsonFileName); os.IsNotExist(err) {
+		// Create the json file
+		jsonFile := make(map[string]map[string]string)
+		jsonFile["program"] = make(map[string]string)
+		jsonFile["pathlist"] = make(map[string]string)
+		WriteToJsonFile(jsonFile)
+
+		// Add the default program path to json file
+		AppendProgramPathToJsonFile("wt", "wt")
+		AppendProgramPathToJsonFile("code", "code")
+	}
+}
+
 // File name : pathlist.json
 var jsonFileName = filepath.Join(getHomeDir(), "pathlist.json")
 
 func main() {
 
-	// if json file not exist then create it
-	if _, err := os.Stat(jsonFileName); os.IsNotExist(err) {
-		jsonFile := make(map[string]map[string]string)
-		jsonFile["program"] = make(map[string]string)
-		jsonFile["pathlist"] = make(map[string]string)
-		WriteToJsonFile(jsonFile)
-	}
+	// Check if json file exist
+	checkJsonFile()
 
-	// if no args then print help and exit
-	if len(os.Args) == 1 {
-		fmt.Println("type see -h for help")
-		return
-	}
-
-	// get args from command line
-	args := os.Args[1:]
-
-	// Get the arguments from the command line
-
-	// If the first argument is "-h" or "--help" print the help message
-	if args[0] == "-h" || args[0] == "--help" {
-		message := `Usage: see [OPTION]... [PATH]...
-Open the specified path in the Windows Explorer.
-
-Options:
--h, --help     display this help and exit
--a, --add      add the path to the pathlist
--l, --list     list all the paths in the pathlist
--r, --remove   remove the path from the pathlist
--re, --rename  rename the path in the pathlist
--wt            open the path in windows terminal
--code  	  	   open the path in vscode
---where 	  location of the pathlist file
-
-`
-		fmt.Println(message)
-
-		return
-	}
-
-	// If the first argument is "--where" then print the path of the json file
-	if args[0] == "--where" {
-		fmt.Println(jsonFileName)
-		return
-	}
-
-	// If the first argument is "-l" or "--list" then list all the paths
-	if args[0] == "-l" || args[0] == "--list" {
-		// Get the pathlist from json file
-		pathList := GetPathList()
-
-		// Print header for the list
-		fmt.Println("Name\t\tPath")
-		fmt.Println("----\t\t----")
-
-		// Print the list
-		for name, path := range pathList {
-			fmt.Printf("%s\t\t%s \n", name, path)
-		}
-
-		return
-	}
-
-	// If the first argument is "-a" or "--add", add the path to the json file
-	if args[0] == "-a" || args[0] == "--add" {
-
-		// Get the name and path
-		name := args[1]
-		path := args[2]
-
-		// Store to json file
-		AppendPathAliasToJsonFile(name, path)
-
-		// Print success message
-		fmt.Println("Path added successfully.")
-
-		return
-	}
-
-	// If the first argument is "-r" or "--remove", remove the path from the json file
-	if args[0] == "-r" || args[0] == "--remove" {
-		// Get the name
-		name := args[1]
-
-		// Remove the path from json file
-		RemovePath(name)
-
-		// Print success message
-		fmt.Println("Path removed successfully.")
-
-		return
-	}
-
-	// If the first argument is "-re" or "--rename", rename the path in the json file
-	if args[0] == "-re" || args[0] == "--rename" {
-		// Get the name and new name
-		name := args[1]
-		newName := args[2]
-
-		// Rename the path in json file
-		RenamePath(name, newName)
-
-		// Print success message
-		fmt.Println("Path renamed successfully.")
-
-		return
-	}
-
-	// If the first argument is "-wt", open the path in windows terminal
-	if args[0] == "-wt" {
-
-		// if there is no path then, run wt in user's home directory
-		if len(args) == 1 {
-			wt.RunWt(getHomeDir(), GetProgramPath("wt"))
-			return
-		}
-
-		// Get the path from lookup function
-		path := lookup(args[1])
-
-		// If path not found then print error message and exit
-		if path == "" {
-			fmt.Println("Path not found")
-			return
-		}
-
-		// Open the path in windows terminal
-		wt.RunWt(path, GetProgramPath("wt"))
-
-		return
-
-	}
-
-	// If the first argument is "-code", open the path in vscode
-	if args[0] == "-code" {
-
-		// Get the path from lookup function
-		path := lookup(args[1])
-
-		// Run vscode with the path
-		vscode.RunCode(path, GetProgramPath("code"))
-
-		return
-	}
-
-	// Open the path in explorer
-	if len(args) == 1 {
-
-		// Get the path from lookup
-		path := lookup(args[0])
-
-		// If the path is in PathList, open the path
-		if path != "" {
-			openPath(path)
-		} else {
-			// open the path in explorer
-			fmt.Printf("opening %v ", args[0])
-			openPath(args[0])
-		}
-
-	}
+	parseArgs()
 
 }
 
-func RenamePath(name string, newName string) {
-	pathList := GetPathList()
-	pathList[newName] = pathList[name]
-	delete(pathList, name)
-	WritePathAliasToJsonFile(pathList)
+// Add the program path to jsonfile
+func AppendProgramPathToJsonFile(name, path string) {
+	// Get the pathlist from json file
+	ProgramPathList := GetProgramPathList()
+
+	// if the path list is empty, create a new one
+	if ProgramPathList == nil {
+		ProgramPathList = make(map[string]string)
+	}
+
+	// Add the path to PathList
+	ProgramPathList[name] = path
+
+	// Write to json file
+	WriteProgramPathToJsonFile(ProgramPathList)
+}
+
+func WriteProgramPathToJsonFile(data map[string]string) {
+	jsonFile := OpenJsonFile()
+
+	// Write the data to json file
+	jsonFile["program"] = data
+
+	// Call WriteToJsonFile function to write the data to json file
+	WriteToJsonFile(jsonFile)
 }
 
 // Open json file and get data from it and return
@@ -246,6 +131,13 @@ func WritePathAliasToJsonFile(data map[string]string) {
 
 	// Call WriteToJsonFile function to write the data to json file
 	WriteToJsonFile(jsonFile)
+}
+
+func RenamePath(name string, newName string) {
+	pathList := GetPathList()
+	pathList[newName] = pathList[name]
+	delete(pathList, name)
+	WritePathAliasToJsonFile(pathList)
 }
 
 // Remove the path from json file
@@ -309,4 +201,131 @@ func openPath(path string) {
 		fmt.Println("Unsupported platform")
 	}
 
+}
+
+var version = "see v0.1.0"
+
+func parseArgs() {
+	// Get the arguments
+	args := os.Args[1:]
+
+	// If there is no argument, print help message and exit
+	if len(args) == 0 {
+		fmt.Println("No argument provided")
+		fmt.Println(helpMessage())
+		return
+	}
+
+	// If the first argument is "-h" or "--help", print help message and exit
+	if args[0] == "-h" || args[0] == "--help" {
+		fmt.Println(helpMessage())
+		return
+	}
+
+	// If the first argument is "-v" or "--version", print version and exit
+	if args[0] == "-v" || args[0] == "--version" {
+		fmt.Println(version)
+		return
+	}
+
+	// If the first argument is "-a" or "--add", check if the path is provided
+	if args[0] == "-a" || args[0] == "--add" {
+		if len(args) == 1 {
+			fmt.Println("No path provided")
+			return
+		}
+
+		// If the path is provided, check if the name is provided
+		if len(args) == 2 {
+			fmt.Println("No name provided")
+			return
+		}
+
+		// If the name is provided, add the path to json file
+		if len(args) == 3 {
+			AppendPathAliasToJsonFile(args[2], args[1])
+			return
+		}
+	}
+
+	// If the first argument is "-r" or "--remove", check if the name is provided
+	if args[0] == "-r" || args[0] == "--remove" {
+		if len(args) == 1 {
+			fmt.Println("No name provided")
+			return
+		}
+
+		// If the name is provided, remove the path from json file
+		if len(args) == 2 {
+			RemovePath(args[1])
+			return
+		}
+	}
+
+	// If the first argument is "-l" or "--list", print the pathlist
+	if args[0] == "-l" || args[0] == "--list" {
+		PathList := GetPathList()
+		for key, value := range PathList {
+			fmt.Printf("%v: %v ", key, value)
+		}
+		return
+	}
+
+	// If the first argument is "-wt"
+	if args[0] == "-wt" {
+		// if there is no path then, run wt in user's home directory
+		if len(args) == 1 {
+			wt.RunWt(getHomeDir(), GetProgramPath("wt"))
+			return
+		}
+
+		// Get the path from lookup function
+		path := lookup(args[1])
+
+		// Open the path in windows terminal
+		wt.RunWt(path, GetProgramPath("wt"))
+
+	}
+
+	// If the first argument is "-code", open the path in vscode
+	if args[0] == "-code" {
+		// if there is no path then, run vscode in user's home directory
+		if len(args) == 1 {
+			openPath(getHomeDir())
+			return
+		}
+
+		// Get the path from lookup function
+		path := lookup(args[1])
+
+		// Open the path in vscode
+		vscode.RunCode(path, GetProgramPath("code"))
+	}
+
+	// If there is one argument
+	if len(args) == 1 {
+		// Get the path from lookup function
+		path := lookup(args[0])
+
+		// Open the path
+		openPath(path)
+	}
+
+}
+
+func helpMessage() string {
+	message := `
+Usage: path [options] [path]
+
+Options:
+  -h, --help      Show this help message and exit
+  -v, --version   Show version and exit
+  -l, --list      List all path
+  -a, --add       Add a path to pathlist
+  -r, --remove    Remove a path from pathlist
+  -re, --rename   Rename a path in pathlist
+  -wt             Open the path in windows terminal
+  -code           Open the path in vscode
+`
+	return message
 }
