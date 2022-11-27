@@ -182,8 +182,9 @@ Options:
 		if path != "" {
 			openPath(path)
 		} else {
-			// If the path is not in PathList, print error message
-			fmt.Println("Path not found.")
+			// open the path in explorer
+			fmt.Printf("opening %v ", args[0])
+			openPath(args[0])
 		}
 
 	}
