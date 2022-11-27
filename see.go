@@ -11,6 +11,9 @@ import (
 	"see/wt"
 )
 
+// File name : pathlist.json
+var jsonFileName = filepath.Join(getHomeDir(), "see.json")
+
 // Get user home directory
 func getHomeDir() string {
 	home, err := os.UserHomeDir()
@@ -23,28 +26,25 @@ func getHomeDir() string {
 
 // If json file not exist then create it
 func checkJsonFile() {
-	// Get the home directory
-	home := getHomeDir()
-
 	// Get the json file name
-	jsonFileName := filepath.Join(home, ".path.json")
+	filename := jsonFileName
 
 	// Check if json file exist
-	if _, err := os.Stat(jsonFileName); os.IsNotExist(err) {
+	if _, err := os.Stat(filename); os.IsNotExist(err) {
 		// Create the json file
-		jsonFile := make(map[string]map[string]string)
-		jsonFile["program"] = make(map[string]string)
-		jsonFile["pathlist"] = make(map[string]string)
-		WriteToJsonFile(jsonFile)
+		os.Create(filename)
 
-		// Add the default program path to json file
-		AppendProgramPathToJsonFile("wt", "wt")
-		AppendProgramPathToJsonFile("code", "code")
+		// Create the json data
+		jsonData := map[string]map[string]string{
+			"program":  {},
+			"pathlist": {},
+		}
+
+		// Write the json data to json file
+		WriteToJsonFile(jsonData)
 	}
-}
 
-// File name : pathlist.json
-var jsonFileName = filepath.Join(getHomeDir(), "pathlist.json")
+}
 
 func main() {
 
@@ -102,7 +102,8 @@ func OpenJsonFile() map[string]map[string]string {
 func WriteToJsonFile(data map[string]map[string]string) {
 	filename := jsonFileName
 
-	jsonData, err := json.Marshal(data)
+	// turn the data to json format
+	jsonData, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -143,13 +144,13 @@ func RenamePath(name string, newName string) {
 // Remove the path from json file
 func RemovePath(name string) {
 	// Get PathList from json file
-	PathList := OpenJsonFile()
+	PathList := GetPathList()
 
 	// Remove the path from PathList
 	delete(PathList, name)
 
-	// Write to json file
-	WriteToJsonFile(PathList)
+	// Call WritePathAliasToJsonFile function to write the data to json file
+	WritePathAliasToJsonFile(PathList)
 
 }
 
@@ -206,18 +207,29 @@ func openPath(path string) {
 var version = "see v0.1.0"
 
 func parseArgs() {
-	// Get the arguments
-	args := os.Args[1:]
 
-	// If there is no argument, print help message and exit
-	if len(args) == 0 {
-		fmt.Println("No argument provided")
-		fmt.Println(helpMessage())
+	// Debug mode
+	debug := false
+
+	if debug {
+		fmt.Println("Debug mode")
+	}
+
+	// If there is no argument, open explorer
+	if len(os.Args) == 1 {
+		openPath("")
 		return
 	}
 
+	args := os.Args[1:]
+
 	// If the first argument is "-h" or "--help", print help message and exit
 	if args[0] == "-h" || args[0] == "--help" {
+
+		if debug {
+			fmt.Println("Print help message")
+		}
+
 		fmt.Println(helpMessage())
 		return
 	}
@@ -244,6 +256,9 @@ func parseArgs() {
 		// If the name is provided, add the path to json file
 		if len(args) == 3 {
 			AppendPathAliasToJsonFile(args[2], args[1])
+
+			// Print success message
+			fmt.Println("Path added successfully")
 			return
 		}
 	}
@@ -255,19 +270,71 @@ func parseArgs() {
 			return
 		}
 
-		// If the name is provided, remove the path from json file
+		// If the name is provided,
 		if len(args) == 2 {
+			// check if the name is in the pathlist
+			if GetPathList()[args[1]] == "" {
+				fmt.Printf("Path with name \"%s\" not found\n", args[1])
+				return
+			}
+
+			// If the name is in the pathlist, remove the path from json file
 			RemovePath(args[1])
+
+			// Print success message
+			fmt.Println("Path removed successfully")
+
+			return
+		}
+	}
+
+	// If the first argument is "-re" or "--rename", check if the name is provided
+	if args[0] == "-re" || args[0] == "--rename" {
+		if len(args) == 1 {
+			fmt.Println("No name provided")
+			return
+		}
+
+		// If the name is provided, check if the new name is provided
+		if len(args) == 2 {
+			fmt.Println("No new name provided")
+			return
+		}
+
+		// If the new name is provided, check if the name is in the pathlist
+		if len(args) == 3 {
+			if GetPathList()[args[1]] == "" {
+				fmt.Printf("Name \"%s\" not found\n", args[1])
+				return
+			}
+
+			// If the name is in the pathlist, rename the path
+			RenamePath(args[1], args[2])
+
+			// Print success message
+			fmt.Println("Path renamed successfully")
 			return
 		}
 	}
 
 	// If the first argument is "-l" or "--list", print the pathlist
 	if args[0] == "-l" || args[0] == "--list" {
-		PathList := GetPathList()
-		for key, value := range PathList {
-			fmt.Printf("%v: %v ", key, value)
+
+		if debug {
+			fmt.Println("List mode")
 		}
+
+		// Get the pathlist from json file
+		PathList := GetPathList()
+
+		// Print the header of the table
+		fmt.Println("Name\tPath")
+
+		// Print the pathlist
+		for name, path := range PathList {
+			fmt.Println(name + "\t" + path)
+		}
+
 		return
 	}
 
@@ -285,6 +352,7 @@ func parseArgs() {
 		// Open the path in windows terminal
 		wt.RunWt(path, GetProgramPath("wt"))
 
+		return
 	}
 
 	// If the first argument is "-code", open the path in vscode
@@ -300,6 +368,8 @@ func parseArgs() {
 
 		// Open the path in vscode
 		vscode.RunCode(path, GetProgramPath("code"))
+
+		return
 	}
 
 	// If there is one argument
@@ -309,6 +379,11 @@ func parseArgs() {
 
 		// Open the path
 		openPath(path)
+	}
+
+	// If there are more than one argument, print help message
+	if len(args) > 1 {
+		fmt.Println(helpMessage())
 	}
 
 }
