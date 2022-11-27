@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -223,11 +222,11 @@ func WriteToJsonFile(data map[string]map[string]string) {
 		fmt.Println(err)
 	}
 
-	err = ioutil.WriteFile(filename, jsonData, 0644)
+	// Write to json file
+	err = os.WriteFile(filename, jsonData, 0644)
 	if err != nil {
 		fmt.Println(err)
 	}
-
 }
 
 func GetProgramPath(name string) string {
