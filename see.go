@@ -56,6 +56,7 @@ Options:
 -a, --add      add the path to the pathlist
 -l, --list     list all the paths in the pathlist
 -r, --remove   remove the path from the pathlist
+-re, --rename  rename the path in the pathlist
 -wt            open the path in windows terminal
 -code  	  	   open the path in vscode
 --where 	  location of the pathlist file
@@ -119,6 +120,21 @@ Options:
 		return
 	}
 
+	// If the first argument is "-re" or "--rename", rename the path in the json file
+	if args[0] == "-re" || args[0] == "--rename" {
+		// Get the name and new name
+		name := args[1]
+		newName := args[2]
+
+		// Rename the path in json file
+		RenamePath(name, newName)
+
+		// Print success message
+		fmt.Println("Path renamed successfully.")
+
+		return
+	}
+
 	// If the first argument is "-wt", open the path in windows terminal
 	if args[0] == "-wt" {
 
@@ -172,6 +188,13 @@ Options:
 
 	}
 
+}
+
+func RenamePath(name string, newName string) {
+	pathList := GetPathList()
+	pathList[newName] = pathList[name]
+	delete(pathList, name)
+	WritePathAliasToJsonFile(pathList)
 }
 
 // Open json file and get data from it and return
