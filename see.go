@@ -373,17 +373,23 @@ func parseArgs() {
 	}
 
 	// If there is one argument
-	if len(args) == 1 {
+	if len(args) == 2 {
 		// Get the path from lookup function
 		path := lookup(args[0])
+		if path == "" {
+			path = args[0]
+		}
 
 		// Open the path
+		fmt.Println("opening", path)
 		openPath(path)
+		return
 	}
 
 	// If there are more than one argument, print help message
 	if len(args) > 1 {
 		fmt.Println(helpMessage())
+		return
 	}
 
 }
