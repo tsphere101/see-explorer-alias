@@ -318,7 +318,7 @@ func parseArgs() {
 	}
 
 	// If the first argument is "-l" or "--list", print the pathlist
-	if args[0] == "-l" || args[0] == "--list" {
+	if args[0] == "-l" || args[0] == "--list" || args[0] == "-all" {
 
 		if debug {
 			fmt.Println("List mode")
@@ -401,7 +401,7 @@ Usage: path [options] [path]
 Options:
   -h, --help      Show this help message and exit
   -v, --version   Show version and exit
-  -l, --list      List all path
+  -l, --list, -all      List all path
   -a, --add       Add a path to pathlist
   -r, --remove    Remove a path from pathlist
   -re, --rename   Rename a path in pathlist
