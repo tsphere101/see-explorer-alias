@@ -9,9 +9,12 @@ see
 Open the specified path in the Explorer.
 
 Options:
--h, --help     display this help and exit
--a, --add      add the path to the pathlist
--l, --list     list all the paths in the pathlist
--r, --remove   remove the path from the pathlist
---where           location of the pathlist file
+  -h, --help      Show this help message and exit
+  -v, --version   Show version and exit
+  -l, --list      List all path
+  -a, --add       Add a path to pathlist
+  -r, --remove    Remove a path from pathlist
+  -re, --rename   Rename a path in pathlist
+  -wt             Open the path in windows terminal
+  -code           Open the path in vscode
 ```
