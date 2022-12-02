@@ -373,7 +373,7 @@ func parseArgs() {
 	}
 
 	// If there is one argument
-	if len(args) == 2 {
+	if len(args) == 1 {
 		// Get the path from lookup function
 		path := lookup(args[0])
 		if path == "" {
@@ -381,7 +381,6 @@ func parseArgs() {
 		}
 
 		// Open the path
-		fmt.Println("opening", path)
 		openPath(path)
 		return
 	}
@@ -392,6 +391,7 @@ func parseArgs() {
 		return
 	}
 
+	fmt.Println("unknown command, use see -h to see helps.")
 }
 
 func helpMessage() string {
