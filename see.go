@@ -349,6 +349,11 @@ func parseArgs() {
 		// Get the path from lookup function
 		path := lookup(args[1])
 
+		// if the path is none, open wt in the given path
+		if path == "" {
+			path = args[1]
+		}
+
 		// Open the path in windows terminal
 		wt.RunWt(path, GetProgramPath("wt"))
 
@@ -365,6 +370,11 @@ func parseArgs() {
 
 		// Get the path from lookup function
 		path := lookup(args[1])
+
+		// if the path is none, open vscode in the given path
+		if path == "" {
+			path = args[1]
+		}
 
 		// Open the path in vscode
 		vscode.RunCode(path, GetProgramPath("code"))
