@@ -317,6 +317,24 @@ func parseArgs() {
 		}
 	}
 
+	// If the first argument is "-p" or "--path", check if the name is provided
+	if args[0] == "-p" || args[0] == "--path" {
+		if len(args) == 1 {
+			fmt.Println("No name provided")
+			return
+		}
+		// If the name is provided, check if the name is in the pathlist
+		if len(args) == 2 {
+			if GetPathList()[args[1]] == "" {
+				fmt.Printf("Path with name \"%s\" not found\n", args[1])
+				return
+			}
+			// If the name is in the pathlist, output the path
+			fmt.Println(GetPathList()[args[1]])
+			return
+		}
+	}
+
 	// If the first argument is "-l" or "--list", print the pathlist
 	if args[0] == "-l" || args[0] == "--list" || args[0] == "-all" {
 
@@ -415,6 +433,7 @@ Options:
   -a, --add       Add a path to pathlist
   -r, --remove    Remove a path from pathlist
   -re, --rename   Rename a path in pathlist
+  -p, --path      Get the path alias
   -wt             Open the path in windows terminal
   -code           Open the path in vscode
 
